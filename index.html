@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Collector App</title>
+  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1e73d8">
+</head>
+
+<body>
+
+<!-- ================= LOGIN PAGE ================= -->
+<div class="overlay" id="loginPage">
+
+  <div class="login-box">
+
+      <div class="brand">
+        <div class="logo">
+          <img src="logo.webp" alt="Rapid Labs Logo">
+        </div>
+        <div class="brand-info">
+          <div class="brand-name">Rapid Labs</div>
+          <div class="brand-tag">Collector App</div>
+        </div>
+      </div>
+
+
+    <!-- TITLE -->
+  <div class="login-sub">Secure access for authorized staff</div>
+
+    <!-- INPUTS -->
+    <div class="input-group">
+      <input id="workerId" placeholder="Enter Worker ID">
+    </div>
+
+    <div class="input-group">
+      <input id="password" type="password" placeholder="Enter Password">
+    </div>
+
+    <!-- BUTTON -->
+    <button id="loginBtn" onclick="login()">Login</button>
+
+  </div>
+</div>
+
+
+<!-- ================= MAIN APP ================= -->
+<div id="app" style="display:none;">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="menu-btn" onclick="toggleMenu()">☰</div>
+    <div class="title">My Tasks</div>
+  </div>
+
+  <!-- DRAWER -->
+  <div id="drawer" class="drawer">
+
+    <div class="drawer-header">Menu</div>
+
+    <div class="drawer-item" onclick="showTaskList()">Dashboard</div>
+    <div class="drawer-item" onclick="showTaskList()">Tasks</div>
+    <div class="drawer-item" onclick="showEarnings()">Earnings</div>
+    <div class="drawer-item" onclick="showSupport()">Support ☎️</div>
+    <div class="drawer-item" onclick="showProfile()">Profile</div>
+
+    <div style="flex-grow:1;"></div>
+
+    <div class="drawer-item logout" onclick="logout()">Logout</div>
+  </div>
+
+  <!-- OVERLAY -->
+  <div id="menuOverlay" class="menu-overlay" onclick="toggleMenu()"></div>
+
+  <!-- ================= MAIN CONTENT ================= -->
+  <div class="content">
+
+    <!-- TASK LIST -->
+    <div id="taskListView">
+      <div id="taskList"></div>
+    </div>
+
+    <!-- TASK DETAIL -->
+    <div id="taskDetailView" style="display:none;">
+      <div id="taskDetailContent"></div>
+
+      <div style="margin-top:20px; display:flex; gap:10px;">
+        <button onclick="startWorkflow()" class="action start">
+          Start Collection
+        </button>
+        <button onclick="showTaskList()" class="action">⬅ Back</button>
+      </div>
+    </div>
+
+    <!-- WORKFLOW -->
+    <div id="workflowView" style="display:none;">
+      <div id="workflowContent"></div>
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ================= POPUP ================= -->
+<div id="popupOverlay" style="
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+">
+  <div id="popupContent" style="
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      width: 90%;
+      max-width: 350px;
+      text-align: center;
+  ">
+    <div id="popup-message"></div>
+    <button onclick="closePopup()">OK</button>
+  </div>
+</div>
+
+<div id="testPopup" class="popup">
+  <div class="popup-content">
+    <h3>Add Test</h3>
+    
+    <input type="text" id="testInput" placeholder="Enter test name" onkeyup="searchTests()" />
+
+    <div id="suggestionsBox"></div>
+
+    <div class="popup-actions">
+      <button onclick="saveTest()">Save</button>
+      <button onclick="closePopup()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="testDetailsModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>🧪 Test Details</h2>
+      <span class="close-btn" onclick="closeTestModal()">×</span>
+    </div>
+
+    <div id="testDetailsBody" class="modal-body"></div>
+  </div>
+</div>
+
+<div id="paymentModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Payment</h3>
+      <span class="close-btn" onclick="closePayment()">×</span>
+    </div>
+
+    <div class="modal-body">
+
+      <div id="paymentDetails"></div>
+
+      <p><b>Total:</b> ₹<span id="totalAmount">0</span></p>
+
+      <p>
+        <b>Discount (%):</b>
+        <input type="number" id="discountInput" min="0" max="60" value="0" oninput="calculateFinal()" />
+      </p>
+
+      <p><b>Payable:</b> ₹<span id="finalAmount">0</span></p>
+
+      <div class="payment-actions">
+          <button type="button" onclick="payCash()">Cash</button>
+          <button type="button" onclick="payUPI()">UPI</button>
+      </div>
+
+      <div id="upiSection" style="display:none; margin-top:10px;">
+        <p>📱 Scan to Pay</p>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay" />
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+  <!-- ✅ EARNINGS -->
+  <div id="earningsView" style="display:none;">
+    <div class="earnings-card">
+      <h3>Earnings 💰</h3>
+
+      <p id="noEarningsMsg" class="no-data">
+        No earnings yet
+      </p>
+
+      <div class="table-wrapper">
+        <table class="earnings-table">
+          <thead>
+            <tr>
+              <th>Task ID</th>
+              <th>Name</th>
+              <th>Test</th>
+              <th>Add-on Test</th>
+              <th>Status</th>
+              <th>Incentive</th>
+            </tr>
+          </thead>
+          <tbody id="earningsTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="earnings-total">
+        Total: ₹<span id="totalEarnings">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ SUPPORT -->
+  <div id="supportView" style="display:none;">
+    <div class="card">
+      <h3>Support ☎️</h3>
+
+      <p style="margin-bottom:15px; color:#555;">
+        Need help? Contact us anytime
+      </p>
+
+      <button class="action" onclick="callSupport()">📞 Call Us</button>
+      <button class="action" onclick="emailSupport()">📧 Email Us</button>
+      <button class="action" onclick="whatsappSupport()">💬 WhatsApp</button>
+    </div>
+  </div>
+
+  <!-- ✅ PROFILE -->
+  <div id="profileView" style="display:none;">
+    <div class="card">
+      <h3>My Profile 👤</h3>
+
+      <div class="card-row">
+        <span class="label">Collector ID:</span>
+        <span class="value" id="profileId">-</span>
+      </div>
+
+      <div class="card-row">
+        <span class="label">Name:</span>
+        <span class="value" id="profileName">-</span>
+      </div>
+
+      <div class="card-row">
+        <span class="label">Mobile:</span>
+        <span class="value" id="profileMobile">-</span>
+      </div>
+
+      <div class="card-row">
+        <span class="label">Email:</span>
+        <span class="value" id="profileEmail">-</span>
+      </div>
+
+      <button class="action" onclick="logout()">🚪 Logout</button>
+    </div>
+  </div>
+
+</div>
+
+
+
+<div id="rescheduleModal" class="modal">
+  <div class="modal-content">
+    <h3>🔁 Reschedule Task</h3>
+
+    <input type="date" id="rescheduleDate"><br><br>
+    <input type="time" id="rescheduleTime"><br><br>
+
+    <button onclick="submitReschedule()">Submit</button>
+    <button onclick="closeReschedule()">Cancel</button>
+  </div>
+</div>
+
+<div id="cancelModal" class="modal">
+  <div class="modal-content">
+    <h3>❌ Cancel Task</h3>
+
+    <textarea id="cancelReason" placeholder="Enter reason"></textarea><br><br>
+
+    <button onclick="submitCancel()">Submit</button>
+    <button onclick="closeCancel()">Back</button>
+  </div>
+</div>
+
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
+
+<script src="./app.js"></script>
+
+
+
+<script>
+async function initNotifications() {
+
+  if (!("serviceWorker" in navigator)) {
+    console.log("Service Worker not supported");
+    return;
+  }
+
+  try {
+
+    // Register main service worker
+    await navigator.serviceWorker.register("./sw.js");
+    console.log("Main Service Worker Registered");
+
+    // Register Firebase messaging service worker
+    const messagingSW = await navigator.serviceWorker.register("./firebase-messaging-sw.js");
+    console.log("Firebase Messaging SW Registered");
+
+    // Ask notification permission
+    const permission = await Notification.requestPermission();
+    console.log("Notification permission:", permission);
+
+    if (permission !== "granted") {
+      console.log("Notification permission denied");
+      return;
+    }
+
+    // Get FCM token
+    const currentToken = await messaging.getToken({
+      vapidKey: "BHZaklPII6O7U3jVCemyb7dsX-Fz0UiSmXd44fSGArJkBHwDoFrNy5PuDb_Qw3T7N4zHiGEgpRkOffrvWXf2mm4",
+      serviceWorkerRegistration: messagingSW
+    });
+
+    if (currentToken) {
+
+      console.log("FCM TOKEN:", currentToken);
+
+      // Send token to backend
+          fetch("http://127.0.0.1:5000/api/save-fcm-token", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              collector_id: collectorId,
+              token: currentToken
+            })
+          });
+
+    } else {
+      console.log("No token available");
+    }
+
+    // Listen for foreground messages
+    messaging.onMessage((payload) => {
+      console.log("Message received:", payload);
+
+      alert(
+        payload.notification.title + " - " + payload.notification.body
+      );
+    });
+
+  } catch (err) {
+    console.log("Token error:", err);
+  }
+
+}
+
+// Run notification setup
+initNotifications();
+</script>
+
+
+</body>
+</html>
