@@ -12,7 +12,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 
 const messaging = firebase.messaging();
-
+const BASE_URL = "https://rapidlabs-backend.onrender.com";
 
 
 
@@ -66,14 +66,17 @@ async function login() {
   const id = document.getElementById("workerId").value;
   const pass = document.getElementById("password").value;
 
-  const res = await fetch("http://127.0.0.1:5000/api/collector-login", {
+  const res = await fetch(`${BASE_URL}/api/collector-login`, {
     method: "POST",
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id: id, password: pass })
+    body: JSON.stringify({
+      id: id,
+      password: pass
+    })
   });
 
     if (res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => null);
         collectorId = data.collector_id;
 
         initNotifications();
@@ -90,8 +93,8 @@ async function login() {
 
 // ================= LOAD TASKS =================
 async function loadTasks() {
-  const res = await fetch(`http://127.0.0.1:5000/api/collector-tasks/${collectorId}`);
-  const data = await res.json();
+  const res = await fetch(`${BASE_URL}/api/collector-tasks/${collectorId}`);
+  const data = await res.json().catch(() => null);
 
   // ✅ FIX FIRST
   tasks = data.map(t => ({
@@ -247,8 +250,8 @@ function updateState(newState) {
 }
 
 async function loadTracking(taskId) {
-  const res = await fetch(`http://127.0.0.1:5000/api/get-tracking/${taskId}`);
-  const data = await res.json();
+  const res = await fetch(`${BASE_URL}/api/get-tracking/${taskId}`);
+  const data = await res.json().catch(() => null);
 
   console.log("TRACKING DATA:", data);
 }
@@ -485,7 +488,7 @@ async function geocodeAddress(address) {
   const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
 
   const res = await fetch(url);
-  const data = await res.json();
+  const data = await res.json().catch(() => null);
 
   if (data && data.length > 0) {
     return {
@@ -661,7 +664,7 @@ function searchTests() {
 
 
 async function loadTestMaster() {
-  const res = await fetch("http://127.0.0.1:5000/static/testMaster.json");
+  const res = await fetch(`${BASE_URL}/static/testMaster.json`);
   testMaster = await res.json();
 
   console.log("Loaded JSON:", testMaster);
@@ -770,14 +773,14 @@ function handover() {
 
 async function completeTask() {
 
-  await fetch("http://127.0.0.1:5000/api/update-task-status", {
-    method: "POST",
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      task_id: selectedTask.id,
-      status: "completed"
-    })
-  });
+    await fetch(`${BASE_URL}/api/update-task-status`, {
+      method: "POST",
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        task_id: selectedTask.id,
+        status: "completed"
+      })
+    });
 
   // ✅ FORCE FINAL SAVE
   const data = {
@@ -946,24 +949,7 @@ function doAnotherTask() {
 
 async function sendStatusToBackend(status) {
   try {
-
-    // ✅ EXISTING API (KEEP THIS)
-    await fetch("http://127.0.0.1:5000/api/update-task-status", {
-      method: "POST",
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        task_id: selectedTask?.id,
-        status: status,
-        patient_name: selectedTask?.patient_name,
-        mobile: selectedTask?.mobile,
-        location: selectedTask?.location,
-        tests: testList,
-        amount: finalPayable
-      })
-    });
-
-    // ✅ ADD THIS (TRACKING SAVE)
-    await fetch("http://127.0.0.1:5000/api/update-task-status", {
+    await fetch(`${BASE_URL}/api/update-task-status`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -974,11 +960,8 @@ async function sendStatusToBackend(status) {
         patient_name: selectedTask?.patient_name,
         mobile: selectedTask?.mobile,
         location: selectedTask?.location,
-        tests: testList.join(","),
-
-        // 🔥 ADD THIS LOGIC
-        addon_tests: getAddonTests(),
-
+        tests: testList.join(","),   // ✅ always string
+        addon_tests: getAddonTests(), // ✅ included
         amount: finalPayable
       })
     });
@@ -989,24 +972,7 @@ async function sendStatusToBackend(status) {
 }
 
 
-function showEarnings() {
 
-  // Close drawer
-  document.getElementById("drawer").classList.remove("open");
-  document.getElementById("menuOverlay").classList.remove("show");
-
-  // ❗ HIDE CONTENT BLOCK COMPLETELY
-  document.querySelector(".content").style.display = "none";
-
-  // Hide other standalone views
-  document.getElementById("supportView").style.display = "none";
-  document.getElementById("profileView").style.display = "none";
-
-  // ✅ Show earnings
-  document.getElementById("earningsView").style.display = "block";
-
-  window.scrollTo(0, 0);
-}
 function calculateEarnings() {
   let total = 0;
   let tbody = document.getElementById("earningsTableBody");
@@ -1191,7 +1157,7 @@ async function submitNow(){
   }
 
   // ✅ CALL BACKEND (IMPORTANT)
-  await fetch("http://127.0.0.1:5000/api/update-task-status", {
+  await fetch(`${BASE_URL}/api/update-task-status`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -1254,7 +1220,7 @@ function submitReschedule() {
 
   const datetime = date + " " + time;
 
-  fetch("http://127.0.0.1:5000/api/update-task-status", {
+  fetch(`${BASE_URL}/api/update-task-status`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -1265,7 +1231,7 @@ function submitReschedule() {
       patient_name: selectedTask.patient_name,
       mobile: selectedTask.mobile,
       location: selectedTask.location,
-      tests: [selectedTask.test],
+      tests: selectedTask.test,
       amount: selectedTask.amount,
       reschedule_datetime: datetime
     })
@@ -1296,7 +1262,7 @@ function submitCancel() {
     return;
   }
 
-  fetch("http://127.0.0.1:5000/api/update-task-status", {
+  fetch(`${BASE_URL}/api/update-task-status`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -1307,7 +1273,7 @@ function submitCancel() {
       patient_name: selectedTask.patient_name,
       mobile: selectedTask.mobile,
       location: selectedTask.location,
-      tests: [selectedTask.test],
+      tests: selectedTask.test,
       amount: selectedTask.amount,
       cancel_reason: reason
     })
@@ -1345,8 +1311,8 @@ async function loadProfile() {
 
   if (!collectorId) return;
 
-  const res = await fetch(`http://127.0.0.1:5000/api/collector/${collectorId}`);
-  const data = await res.json();
+  const res = await fetch(`${BASE_URL}/api/collector/${collectorId}`);
+  const data = await res.json().catch(() => null);
 
   if (!data || data.error) {
     console.error("Profile load failed");
@@ -1397,17 +1363,16 @@ function initNotifications() {
         console.log("FCM TOKEN:", token);
 
         // 🔥 SEND TOKEN TO FLASK SERVER
-        fetch("http://127.0.0.1:5000/api/save-fcm-token", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            collector_id: collectorId,
-            token: token
-          })
-        });
-
+      fetch(`${BASE_URL}/api/save-fcm-token`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          collector_id: collectorId,
+          token: token
+        })
+      });
       });
 
     }
