@@ -1,3 +1,8 @@
+let testMasterLoaded = false;
+
+
+
+
 // 🔥 Firebase Setup
 const firebaseConfig = {
   apiKey: "AIzaSyAbS_WXbOEuIQYJe5ZsLLTwj38XRaMWVMY",
@@ -268,9 +273,8 @@ let testMaster = {}; // 🔥 ADD THIS
 
   // ================= STEP 4 =================
 
-  function openPaymentAndLock() {
-  openPayment();   // open popup
-  updateState();   // IN_PROGRESS → SAMPLE_COLLECTED
+function openPaymentAndLock() {
+  openPayment();   // ONLY open popup
 }
 
 
@@ -410,6 +414,9 @@ html += renderStepCard({
         ? `💰 Payable Amount: ₹${finalPayable}` 
         : "Amount will be calculated from selected tests"}
     </p>
+
+    <button class="action start" onclick="openPayment()">Pay Now</button>
+
   `
 });
 
@@ -612,7 +619,7 @@ function startTest() {
   updateState(); 
 }
 function addTest() {
-  document.getElementById("testPopup").style.display = "block";
+  document.getElementById("testPopup").style.display = "flex";
 }
 function closePopup() {
   document.getElementById("testPopup").style.display = "none";
@@ -633,6 +640,9 @@ function saveTest() {
 }
 
 function searchTests() {
+
+  if (!testMasterLoaded) return; // ✅ ADD THIS
+
   const input = document.getElementById("testInput").value.toLowerCase();
   const box = document.getElementById("suggestionsBox");
 
@@ -667,10 +677,19 @@ async function loadTestMaster() {
   const res = await fetch(`${BASE_URL}/static/testMaster.json`);
   testMaster = await res.json();
 
+  testMasterLoaded = true; // ✅ IMPORTANT
+
   console.log("Loaded JSON:", testMaster);
 }
 
+
 function viewTestDetails() {
+
+  if (!testMasterLoaded) {
+    alert("Please wait, loading test data...");
+    return;
+  }
+
   let html = "";
 
   testList.forEach(inputName => {
@@ -807,18 +826,15 @@ function toggleMenu() {
 }
 
 // ================= AUTO LOGIN =================
-window.onload = function () {
+window.onload = async function () {
 
-  // 🔔 Ask notification permission
-    if ("Notification" in window) {
-      Notification.requestPermission().then(permission => {
-        console.log("Notification permission:", permission);
-      });
-    }
+  if ("Notification" in window) {
+    Notification.requestPermission().then(permission => {
+      console.log("Notification permission:", permission);
+    });
+  }
 
-
-
-  loadTestMaster(); // 🔥 ADD THIS LINE
+  await loadTestMaster(); // ✅ FIXED (waits properly)
 
   const savedId = localStorage.getItem("collectorId");
 
@@ -913,7 +929,7 @@ function payCash() {
   alert("✅ Payment Done (Cash)");
   closePayment();
 
-  updateState("PAYMENT_DONE"); // ✅ correct
+  updateState("PAYMENT_DONE"); // ✅ keep here
 }
 
 
@@ -921,13 +937,11 @@ function payCash() {
 function payUPI() {
   document.getElementById("upiSection").style.display = "block";
 
-  // simulate payment success after 3 sec (or add button later)
   setTimeout(() => {
     alert("✅ Payment Done (UPI)");
     closePayment();
 
-    // ✅ Move to LAB step
-    updateState("IN_TRANSIT_TO_LAB");
+    updateState("PAYMENT_DONE"); // ✅ FIX THIS
   }, 3000);
 }
 
@@ -1379,3 +1393,6 @@ function initNotifications() {
   });
 }
 
+function closeTestPopup() {
+  document.getElementById("testPopup").style.display = "none";
+}
