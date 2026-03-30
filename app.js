@@ -621,9 +621,7 @@ function startTest() {
 function addTest() {
   document.getElementById("testPopup").style.display = "flex";
 }
-function closePopup() {
-  document.getElementById("testPopup").style.display = "none";
-}
+
 
 function saveTest() {
   const input = document.getElementById("testInput").value;
@@ -1394,5 +1392,12 @@ function initNotifications() {
 }
 
 function closeTestPopup() {
-  document.getElementById("testPopup").style.display = "none";
+  document.getElementById("testPopup").style.display = "flex";
 }
+
+window.addTest = addTest;
+window.viewTestDetails = viewTestDetails;
+window.openPaymentAndLock = openPaymentAndLock;
+window.deleteTest = deleteTest;
+window.toggleParams = toggleParams;
+window.openPayment = openPayment;
