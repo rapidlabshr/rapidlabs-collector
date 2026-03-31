@@ -837,6 +837,14 @@ body::after {
   opacity: 1; /* ✅ FIX */
 }
 
+.popup {
+  display: none;   /* 🔥 THIS IS MISSING */
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+}
+
+
 /* SHOW */
 .popup.show {
   display: block;

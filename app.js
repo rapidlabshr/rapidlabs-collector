@@ -618,9 +618,15 @@ function startTest() {
 
   updateState(); 
 }
+
 function addTest() {
-  document.getElementById("testPopup").style.opacity = "1";
+  document.getElementById("testPopup").classList.add("show");
 }
+
+function closePopup() {
+  document.getElementById("testPopup").classList.remove("show");
+}
+
 
 
 function saveTest() {
