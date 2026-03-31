@@ -823,18 +823,18 @@ body::after {
 
 
 /* ================= POPUP OVERLAY ================= */
-.popup {
+.modal {
   display: none;
   position: fixed;
   inset: 0;
-
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0,0,0,0.5);
   backdrop-filter: blur(6px);
+  z-index: 2000;
 
-  z-index: 999;
+  justify-content: center;
+  align-items: center;
 
-  opacity: 0;
-  transition: 0.25s ease;
+  opacity: 1; /* ✅ FIX */
 }
 
 /* SHOW */

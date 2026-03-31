@@ -619,7 +619,7 @@ function startTest() {
   updateState(); 
 }
 function addTest() {
-  document.getElementById("testPopup").style.display = "flex";
+  document.getElementById("testPopup").style.opacity = "1";
 }
 
 
