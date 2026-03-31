@@ -268,15 +268,19 @@ let finalPayable = 0;
 let workflowState = "ASSIGNED";
 let distance = 500;
 let testList = [];
+let paymentCompleted = false; // ✅ ADD THIS
 
 let testMaster = {}; // 🔥 ADD THIS
 
   // ================= STEP 4 =================
 
 function openPaymentAndLock() {
-  openPayment();   // ONLY open popup
-}
+  updateState("SAMPLE_COLLECTED");
 
+  renderWorkflow(); // ✅ ADD THIS LINE
+
+  openPayment();
+}
 
 
 function getStepIndex(state) {
@@ -386,7 +390,7 @@ testList.forEach((t, index) => {
   testHTML += `
     <div class="task-info" style="display:flex; justify-content:space-between; align-items:center;">
       <span>• ${t}</span>
-      <span style="color:red; cursor:pointer; font-weight:bold;" onclick="deleteTest(${index})">❌</span>
+      <span style="color:red; cursor:pointer; font-weight:bold;" onclick="window.deleteTest(${index})">❌</span>
     </div>
   `;
 });
@@ -441,14 +445,20 @@ html += renderStepCard({
 // ================= STEP 6 =================
 html += renderStepCard({
   title: "✅ Complete",
-  state: "COMPLETED",   // ✅ REQUIRED
+  state: "COMPLETED",
   current: state,
   content: `
     <button type="button" class="action complete" onclick="completeTask()">
       Finish Task
     </button>
+
+    <button type="button" class="action back-btn" onclick="showTaskList()">
+      ⬅ Back to Tasks
+    </button>
   `
 });
+
+
 
 // ✅ ADD HERE (outside steps)
 html += `
@@ -619,12 +629,16 @@ function startTest() {
   updateState(); 
 }
 
+
+
 function addTest() {
-  document.getElementById("testPopup").classList.add("show");
+  document.getElementById("testPopup").style.display = "flex";
 }
 
+
+
 function closePopup() {
-  document.getElementById("testPopup").classList.remove("show");
+  document.getElementById("testPopup").style.display = "none";
 }
 
 
@@ -689,8 +703,15 @@ async function loadTestMaster() {
 
 function viewTestDetails() {
 
+  console.log("CLICKED VIEW DETAILS");
+
+  if (!testList || testList.length === 0) {
+    alert("No tests available");
+    return;
+  }
+
   if (!testMasterLoaded) {
-    alert("Please wait, loading test data...");
+    alert("Test data still loading...");
     return;
   }
 
@@ -748,7 +769,7 @@ function viewTestDetails() {
   });
 
   document.getElementById("testDetailsBody").innerHTML = html;
-  document.getElementById("testDetailsModal").style.display = "flex";
+  document.getElementById("testDetailsModal").classList.add("show");
 }
 
 function toggleParams(key) {
@@ -770,9 +791,6 @@ function deleteTest(index) {
   renderWorkflow(workflowState); // refresh UI
 }
 
-function closeTestModal() {
-  document.getElementById("testDetailsModal").style.display = "none";
-}
 
 
 // function collectSample() {
@@ -796,14 +814,17 @@ function handover() {
 
 async function completeTask() {
 
-    await fetch(`${BASE_URL}/api/update-task-status`, {
-      method: "POST",
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        task_id: selectedTask.id,
-        status: "completed"
-      })
-    });
+  await fetch(`${BASE_URL}/api/update-task-status`, {
+    method: "POST",
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      task_id: selectedTask.id,
+      status: "completed"
+    })
+  });
+
+  // ✅ ALERT FOR USER
+  alert("🎉 Task Completed Successfully!");
 
   // ✅ FORCE FINAL SAVE
   const data = {
@@ -811,7 +832,7 @@ async function completeTask() {
     distance: distance,
     testList: testList,
     payable: finalPayable,
-    incentive: selectedTask.incentive ?? 0  // ✅ ADD THIS
+    incentive: selectedTask.incentive ?? 0
   };
 
   localStorage.setItem(getTaskKey(selectedTask.id), JSON.stringify(data));
@@ -875,6 +896,7 @@ function isStepAccessible(currentState, step) {
 
 let totalAmount = 0;
 
+
 function openPayment() {
 
   let html = "";
@@ -906,8 +928,13 @@ function openPayment() {
 
   calculateFinal();
 
-  document.getElementById("paymentModal").style.display = "flex";
+  // ✅ FIXED
+  document.getElementById("paymentModal").classList.add("show");
+
+  console.log("Opening payment modal");
 }
+
+
 
 
 function calculateFinal() {
@@ -931,26 +958,25 @@ function calculateFinal() {
 
 function payCash() {
   alert("✅ Payment Done (Cash)");
-  closePayment();
 
-  updateState("PAYMENT_DONE"); // ✅ keep here
+  paymentCompleted = true; // ✅ mark done
+
+  updateState("PAYMENT_DONE");
 }
-
-
 
 function payUPI() {
   document.getElementById("upiSection").style.display = "block";
 
   setTimeout(() => {
-    alert("✅ Payment Done (UPI)");
-    closePayment();
+    paymentCompleted = true; // ✅ mark done
 
-    updateState("PAYMENT_DONE"); // ✅ FIX THIS
+    updateState("PAYMENT_DONE");
   }, 3000);
 }
 
+
 function closePayment() {
-  document.getElementById("paymentModal").style.display = "none";
+  document.getElementById("paymentModal").classList.remove("show");
 }
 
 
@@ -1219,11 +1245,19 @@ function submitLater(){
 }
 
 function openReschedule() {
-  document.getElementById("rescheduleModal").style.display = "flex";
+  console.log("✅ Reschedule clicked");
+
+  const modal = document.getElementById("rescheduleModal");
+  if (modal) {
+    modal.classList.add("show");   // ✅ FIX
+  }
 }
 
 function closeReschedule() {
-  document.getElementById("rescheduleModal").style.display = "none";
+  const modal = document.getElementById("rescheduleModal");
+  if (modal) {
+    modal.classList.remove("show");  // ✅ FIX
+  }
 }
 
 function submitReschedule() {
@@ -1237,6 +1271,13 @@ function submitReschedule() {
   }
 
   const datetime = date + " " + time;
+
+  // ✅ EXTRA SAFETY CHECK (IMPORTANT)
+  if (!selectedTask) {
+    alert("Task not selected");
+    console.error("❌ selectedTask is null");
+    return;
+  }
 
   fetch(`${BASE_URL}/api/update-task-status`, {
     method: "POST",
@@ -1256,20 +1297,33 @@ function submitReschedule() {
   })
   .then(res => res.json())
   .then(data => {
+    console.log("✅ Reschedule API response:", data);
     alert("Task Rescheduled ✅");
     closeReschedule();
+  })
+  .catch(err => {
+    console.error("❌ Reschedule API error:", err);
+    alert("Something went wrong");
   });
 }
 
 
-
 function openCancel() {
-  document.getElementById("cancelModal").style.display = "flex";
+  const modal = document.getElementById("cancelModal");
+  if (modal) {
+    modal.classList.add("show");
+  }
 }
 
 function closeCancel() {
-  document.getElementById("cancelModal").style.display = "none";
+  const modal = document.getElementById("cancelModal");
+  if (modal) {
+    modal.classList.remove("show");
+  }
 }
+
+
+
 
 function submitCancel() {
 
@@ -1398,8 +1452,11 @@ function initNotifications() {
 }
 
 function closeTestPopup() {
-  document.getElementById("testPopup").style.display = "flex";
+  document.getElementById("testPopup").classList.remove("show");
 }
+
+
+
 
 window.addTest = addTest;
 window.viewTestDetails = viewTestDetails;
@@ -1407,3 +1464,68 @@ window.openPaymentAndLock = openPaymentAndLock;
 window.deleteTest = deleteTest;
 window.toggleParams = toggleParams;
 window.openPayment = openPayment;
+window.openReschedule = openReschedule;
+window.openCancel = openCancel;
+window.submitReschedule = submitReschedule;
+window.submitCancel = submitCancel;
+window.closeReschedule = closeReschedule;
+window.closeCancel = closeCancel;
+
+
+
+
+
+
+
+
+function showTestDetailsPopup() {
+if (!testMasterLoaded) {
+  console.log("testMaster not loaded, still opening modal");
+}
+
+  const container = document.getElementById("testDetailsContent");
+  container.innerHTML = "";
+
+  testList.forEach(test => {
+    const details = testMaster[test] || {};
+
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <h4>${test}</h4>
+      <p>${details.description || "No details available"}</p>
+      <hr/>
+    `;
+    container.appendChild(div);
+  });
+
+  document.getElementById("testDetailsPopup").classList.add("show");
+}
+
+
+function openTestModal(data) {
+  const modal = document.getElementById("testDetailsModal");
+
+  // Fill data
+  document.getElementById("testDetailsBody").innerHTML = data;
+
+  // SHOW
+  modal.classList.add("show");
+}
+
+function closeTestModal() {
+  document.getElementById("testDetailsModal")
+    .classList.remove("show");
+}
+
+function goNextFromPayment() {
+
+  if (!paymentCompleted) {
+    alert("Complete payment first");
+    return;
+  }
+
+  paymentCompleted = false; // reset for next use
+
+  closePayment();
+  updateState();
+}

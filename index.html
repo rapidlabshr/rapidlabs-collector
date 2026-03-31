@@ -139,7 +139,7 @@
 
     <div class="popup-actions">
       <button onclick="saveTest()">Save</button>
-      <button onclick="closeTestPopup()">Cancel</button>
+      <button onclick="closePopup()">Cancel</button>
     </div>
   </div>
 </div>
@@ -178,11 +178,15 @@
       <div class="payment-actions">
           <button type="button" onclick="payCash()">Cash</button>
           <button type="button" onclick="payUPI()">UPI</button>
+
+          <button type="button" class="next-btn" onclick="goNextFromPayment()">
+          Next ➡️
+        </button>
       </div>
 
       <div id="upiSection" style="display:none; margin-top:10px;">
         <p>📱 Scan to Pay</p>
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay" />
+        <img src="QRCode.webp" />
       </div>
 
     </div>
@@ -298,78 +302,82 @@
 
 <script src="./app.js"></script>
 
-
-
 <script>
 async function initNotifications() {
 
   if (!("serviceWorker" in navigator)) {
-    console.log("Service Worker not supported");
+    console.log("❌ Service Worker not supported");
     return;
   }
 
   try {
+    // ✅ Register ONLY ONE service worker (important)
+    const swRegistration = await navigator.serviceWorker.register("./firebase-messaging-sw.js");
+    console.log("✅ Service Worker Registered");
 
-    // Register main service worker
-    await navigator.serviceWorker.register("./sw.js");
-    console.log("Main Service Worker Registered");
-
-    // Register Firebase messaging service worker
-    const messagingSW = await navigator.serviceWorker.register("./firebase-messaging-sw.js");
-    console.log("Firebase Messaging SW Registered");
-
-    // Ask notification permission
+    // ✅ Ask permission
     const permission = await Notification.requestPermission();
-    console.log("Notification permission:", permission);
+    console.log("🔔 Permission:", permission);
 
     if (permission !== "granted") {
-      console.log("Notification permission denied");
+      console.log("❌ Notification permission denied");
       return;
     }
 
-    // Get FCM token
+    // ✅ Get FCM token
     const currentToken = await messaging.getToken({
       vapidKey: "BHZaklPII6O7U3jVCemyb7dsX-Fz0UiSmXd44fSGArJkBHwDoFrNy5PuDb_Qw3T7N4zHiGEgpRkOffrvWXf2mm4",
-      serviceWorkerRegistration: messagingSW
+      serviceWorkerRegistration: swRegistration
     });
 
-    if (currentToken) {
-
-      console.log("FCM TOKEN:", currentToken);
-
-      // Send token to backend
-          fetch("http://127.0.0.1:5000/api/save-fcm-token", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              collector_id: collectorId,
-              token: currentToken
-            })
-          });
-
-    } else {
-      console.log("No token available");
+    if (!currentToken) {
+      console.log("❌ No token received");
+      return;
     }
 
-    // Listen for foreground messages
-    messaging.onMessage((payload) => {
-      console.log("Message received:", payload);
+    console.log("✅ FCM TOKEN:", currentToken);
 
-      alert(
-        payload.notification.title + " - " + payload.notification.body
-      );
+    // ✅ Send token to YOUR backend (FIXED URL)
+    await fetch(`${BASE_URL}/api/save-fcm-token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        collector_id: collectorId,
+        token: currentToken
+      })
+    });
+
+    console.log("✅ Token sent to backend");
+
+    // ✅ Foreground message listener (better UI)
+    messaging.onMessage((payload) => {
+      console.log("📩 Message received:", payload);
+
+      const title = payload.notification?.title || "Notification";
+      const body = payload.notification?.body || "";
+
+      // 🔥 Better than alert()
+      new Notification(title, {
+        body: body,
+        icon: "/logo.webp"
+      });
     });
 
   } catch (err) {
-    console.log("Token error:", err);
+    console.error("❌ Notification Error:", err);
   }
-
 }
 
-// Run notification setup
-initNotifications();
+// ✅ Call AFTER login (IMPORTANT)
+function startNotifications() {
+  if (!collectorId) {
+    console.log("Collector not logged in yet");
+    return;
+  }
+  initNotifications();
+}
 </script>
 
 

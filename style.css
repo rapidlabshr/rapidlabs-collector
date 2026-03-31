@@ -823,19 +823,6 @@ body::after {
 
 
 /* ================= POPUP OVERLAY ================= */
-.modal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  backdrop-filter: blur(6px);
-  z-index: 2000;
-
-  justify-content: center;
-  align-items: center;
-
-  opacity: 1; /* ✅ FIX */
-}
 
 .popup {
   display: none;   /* 🔥 THIS IS MISSING */
@@ -845,11 +832,7 @@ body::after {
 }
 
 
-/* SHOW */
-.popup.show {
-  display: block;
-  opacity: 1;
-}
+
 
 /* ================= POPUP CARD (BOTTOM SHEET) ================= */
 .popup-content {
@@ -979,28 +962,6 @@ body::after {
   }
 }
 /* ================= MODAL BACKGROUND ================= */
-.modal {
-  display: none;
-  position: fixed;
-  inset: 0;
-
-  background: rgba(0,0,0,0.5);
-  backdrop-filter: blur(6px);
-
-  z-index: 2000;
-
-  justify-content: center;
-  align-items: center;
-
-  opacity: 0;
-  transition: 0.25s ease;
-}
-
-/* SHOW */
-.modal.show {
-  display: flex;
-  opacity: 1;
-}
 
 /* ================= MODAL BOX ================= */
 .modal-content {
@@ -1274,28 +1235,6 @@ body::after {
 
 
 /* ===== MODAL OVERLAY ===== */
-.modal {
-  position: fixed;
-  inset: 0;
-
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(6px);
-
-  display: none;
-  justify-content: center;
-  align-items: center;
-
-  z-index: 1000;
-
-  opacity: 0;
-  transition: 0.25s ease;
-}
-
-/* SHOW */
-.modal.show {
-  display: flex;
-  opacity: 1;
-}
 
 /* ===== MODAL CARD ===== */
 .modal-content {
@@ -1532,6 +1471,76 @@ body::after {
     min-width: 140px;
   }
 }
+
+
+.next-btn {
+  display: block;          /* ✅ forces next line */
+  width: 100%;             /* ✅ full width (mobile friendly) */
+  padding: 12px;
+  margin-top: 12px;        /* space from above buttons */
+
+  background-color: #28a745;
+  color: white;
+
+  border: none;
+  border-radius: 6px;
+
+  font-size: 16px;
+  font-weight: 500;
+
+  cursor: pointer;
+}
+
+/* simple touch feedback */
+.next-btn:active {
+  opacity: 0.8;
+}
+
+/* disabled state */
+.next-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.payment-actions {
+  display: flex;
+  flex-direction: column;  /* ✅ buttons go one below another */
+  gap: 8px;
+}
+
+
+.back-btn {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  font-size: 14px;
+  border-radius: 8px;
+  border: none;
+  background: #f1f1f1;
+  color: #333;
+  cursor: pointer;
+}
+
+.back-btn:active {
+  transform: scale(0.98);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* ===== EARNINGS CONTAINER ===== */
 .earnings-container {
   padding: 0;
@@ -1730,28 +1739,32 @@ body::after {
 
 
 /* 🔹 MODAL OVERLAY */
+
+/* ===== SINGLE SOURCE OF TRUTH ===== */
 .modal {
   display: none;
   position: fixed;
   inset: 0;
 
-  z-index: 999;
-
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(6px);
 
   justify-content: center;
   align-items: center;
 
+  z-index: 9999;
+
   opacity: 0;
-  transition: 0.25s ease;
+  transition: opacity 0.25s ease;
 }
 
-/* SHOW */
 .modal.show {
   display: flex;
   opacity: 1;
 }
+
+
+
 
 /* 🔹 MODAL BOX */
 .modal-content {
