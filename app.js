@@ -869,6 +869,8 @@ window.onload = async function () {
     document.getElementById("loginPage").style.display = "none";
     document.getElementById("app").style.display = "block";
 
+    initNotifications();   // ✅ ADD THIS LINE
+
     loadTasks();
   }
 };
@@ -1425,17 +1427,27 @@ function getBookingId(id) {
 
 
 function initNotifications() {
+
   Notification.requestPermission().then(permission => {
-    if (permission === "granted") {
 
-      messaging.getToken({
-        vapidKey: "BHZaklPII6O7U3jVCemyb7dsX-Fz0UiSmXd44fSGArJkBHwDoFrNy5PuDb_Qw3T7N4zHiGEgpRkOffrvWXf2mm4"
-      }).then(token => {
+    if (permission !== "granted") {
+      console.log("❌ Notification permission denied");
+      return;
+    }
 
-        console.log("FCM TOKEN:", token);
+    messaging.getToken({
+      vapidKey: "BHZaklPII6O7U3jVCemyb7dsX-Fz0UiSmXd44fSGArJkBHwDoFrNy5PuDb_Qw3T7N4zHiGEgpRkOffrvWXf2mm4"
+    })
+    .then(token => {
 
-        // 🔥 SEND TOKEN TO FLASK SERVER
-      fetch(`${BASE_URL}/api/save-fcm-token`, {
+      if (!token) {
+        console.log("❌ No token received");
+        return;
+      }
+
+      console.log("✅ FCM TOKEN:", token);
+
+      return fetch(`${BASE_URL}/api/save-fcm-token`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -1445,9 +1457,15 @@ function initNotifications() {
           token: token
         })
       });
-      });
 
-    }
+    })
+    .then(() => {
+      console.log("✅ Token saved to backend");
+    })
+    .catch(err => {
+      console.error("❌ Token error:", err);
+    });
+
   });
 }
 
