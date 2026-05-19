@@ -4,8 +4,8 @@
   <title>Collector App</title>
   <link rel="stylesheet" href="style.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#1e73d8">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1e73d8">
 </head>
 
 <body>
@@ -50,7 +50,9 @@
 
   <!-- TOP BAR -->
   <div class="topbar">
-    <div class="menu-btn" onclick="toggleMenu()">☰</div>
+    <div class="menu-btn" onclick="toggleMenu()">
+      <span>&#9776;</span>
+    </div>
     <div class="title">My Tasks</div>
   </div>
 
@@ -62,7 +64,7 @@
     <div class="drawer-item" onclick="showTaskList()">Dashboard</div>
     <div class="drawer-item" onclick="showTaskList()">Tasks</div>
     <div class="drawer-item" onclick="showEarnings()">Earnings</div>
-    <div class="drawer-item" onclick="showSupport()">Support ☎️</div>
+    <div class="drawer-item" onclick="showSupport()">Support &#9742;</div>
     <div class="drawer-item" onclick="showProfile()">Profile</div>
 
     <div style="flex-grow:1;"></div>
@@ -98,9 +100,6 @@
       <div id="workflowContent"></div>
     </div>
 
-  </div>
-
-</div>
 
 
 <!-- ================= POPUP ================= -->
@@ -228,7 +227,7 @@
   <!-- ✅ SUPPORT -->
   <div id="supportView" style="display:none;">
     <div class="card">
-      <h3>Support ☎️</h3>
+      <h3>Support &#9742;</h3>
 
       <p style="margin-bottom:15px; color:#555;">
         Need help? Contact us anytime
@@ -241,33 +240,41 @@
   </div>
 
   <!-- ✅ PROFILE -->
-  <div id="profileView" style="display:none;">
-    <div class="card">
-      <h3>My Profile 👤</h3>
+<!-- ✅ PROFILE -->
+<div id="profileView" style="display:none;">
+  <div class="profile-card">
 
-      <div class="card-row">
-        <span class="label">Collector ID:</span>
-        <span class="value" id="profileId">-</span>
+    <div class="profile-top">
+      <div class="profile-photo-wrap">
+        <img id="profilePhoto" src="logo.webp" class="profile-photo">
+        <input type="file" id="profileImageInput" accept="image/*" style="display:none;" onchange="saveProfileImage(event)">
       </div>
 
-      <div class="card-row">
-        <span class="label">Name:</span>
-        <span class="value" id="profileName">-</span>
-      </div>
+      <h3 id="profileName">-</h3>
+      <p id="profileId">-</p>
 
-      <div class="card-row">
-        <span class="label">Mobile:</span>
-        <span class="value" id="profileMobile">-</span>
+      <div class="profile-photo-actions">
+        <button onclick="document.getElementById('profileImageInput').click()">Change Photo</button>
+        <button onclick="removeProfileImage()">Remove</button>
       </div>
-
-      <div class="card-row">
-        <span class="label">Email:</span>
-        <span class="value" id="profileEmail">-</span>
-      </div>
-
-      <button class="action" onclick="logout()">🚪 Logout</button>
     </div>
+
+    <div class="profile-info">
+      <div class="profile-row">
+        <span>Mobile</span>
+        <b id="profileMobile">-</b>
+      </div>
+
+      <div class="profile-row">
+        <span>Email</span>
+        <b id="profileEmail">-</b>
+      </div>
+    </div>
+
+    <button class="profile-logout" onclick="logout()">Logout</button>
+
   </div>
+</div>
 
 </div>
 
@@ -301,6 +308,8 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
 
 <script src="./app.js"></script>
+</div>
+</div>
 
 <script>
 async function initNotifications() {

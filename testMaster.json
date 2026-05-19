@@ -5188,16 +5188,27 @@
     ]
   },
   "Basic Health Checkup": {
-    "price": 999,
+    "price": 799,
     "parameters": [
+      "Total Bilirubin",
+      "SGOT (AST)",
+      "SGPT (ALT)",
+      "Blood Urea",
+      "Serum Creatinine",
+      "Fasting Blood Sugar (FBS)",
+      "Total Cholesterol",
+      "Triglycerides",
       "Hemoglobin",
-      "RBC",
-      "WBC",
+      "Total WBC Count",
+      "RBC Count",
       "Platelet Count",
-      "Blood Glucose",
-      "Urea",
-      "Creatinine",
-      "Total Cholesterol"
+      "ESR",
+      "Urine Color",
+      "Urine Appearance",
+      "Urine Specific Gravity",
+      "Urine pH",
+      "Urine Protein (Albumin)",
+      "Urine Glucose"
     ],
     "equipment": [
       "Syringe (1)",

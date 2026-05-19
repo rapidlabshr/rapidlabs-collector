@@ -17,7 +17,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 
 const messaging = firebase.messaging();
-const BASE_URL = "https://rapidlabs-backend.onrender.com";
+const BASE_URL = "https://your-backend-name.onrender.com";
 
 
 
@@ -191,10 +191,10 @@ function openTaskDetails(task) {
 
 // ================= START WORKFLOW =================
 async function startWorkflow() {
+
   document.getElementById("taskDetailView").style.display = "none";
   document.getElementById("workflowView").style.display = "block";
 
-  // ✅ Check address first
   if (!selectedTask.location) {
     alert("Task location is missing");
     return;
@@ -202,42 +202,34 @@ async function startWorkflow() {
 
   console.log("ADDRESS:", selectedTask.location);
 
-  // ✅ Convert address → lat/lng
-  const coords = await geocodeAddress(selectedTask.location);
+  // ✅ NO geocoding here now
+  // ✅ App will open admin-given address directly in Google Maps
+  selectedTask.lat = null;
+  selectedTask.lng = null;
+  distance = "Open Map";
 
-  if (!coords) {
-    alert("Failed to get location from address");
-    return;
-  }
-
-  // ✅ Set destination
-  selectedTask.lat = coords.lat;
-  selectedTask.lng = coords.lng;
-
-  console.log("DESTINATION:", selectedTask.lat, selectedTask.lng);
-
-  // ✅ Load saved state
   const saved = loadTaskState(selectedTask.id);
 
   if (saved) {
     workflowState = saved.state;
-    distance = saved.distance || 0;
     testList = saved.testList || [];
     finalPayable = saved.payable || 0;
 
-    // ✅ LOAD INCENTIVE ALSO
     if (selectedTask.incentive == null || selectedTask.incentive === 0) {
-    selectedTask.incentive = saved?.incentive ?? selectedTask.incentive ?? 0;
-  }
+      selectedTask.incentive =
+        saved?.incentive ??
+        selectedTask.incentive ??
+        0;
+    }
+
   } else {
     workflowState = "ASSIGNED";
-    distance = 0;
     testList = [];
   }
 
-  // ✅ Render UI
   renderWorkflow(workflowState);
 }
+
 
 function updateState(newState) {
   if (!newState) {
@@ -356,7 +348,7 @@ function renderWorkflow(state) {
     current: state,
     content: `
       <p>Status: ${workflowState === "ON_THE_WAY" ? "On the way..." : "Not started"}</p>
-      <p>Distance: ${distance} m</p>
+      <p>Distance: Open Google Maps for exact route</p>
       <button type="button" class="action start" onclick="startJourney()"
         ${workflowState !== "ASSIGNED" ? "disabled" : ""}>
         Start Journey
@@ -492,44 +484,10 @@ function renderStepCard({ title, state, current, content }) {
 }
 
 
-
-function openMap(location) {
-  const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(location)}`;
-  window.open(url, "_blank");
-
-}
-
-// locations 
-
-async function geocodeAddress(address) {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
-
-  const res = await fetch(url);
-  const data = await res.json().catch(() => null);
-
-  if (data && data.length > 0) {
-    return {
-      lat: parseFloat(data[0].lat),
-      lng: parseFloat(data[0].lon)
-    };
-  } else {
-    alert("Location not found");
-    return null;
-  }
-}
-
-
-// ================= ACTIONS =================
-let watchId;
-
 function startJourney() {
 
-  canReach = true;
-
-
-  // ✅ Check destination FIRST (MUST be inside function)
-  if (!selectedTask || !selectedTask.lat || !selectedTask.lng) {
-    alert("Location not ready yet");
+  if (!selectedTask || !selectedTask.location) {
+    alert("Patient address missing");
     return;
   }
 
@@ -538,47 +496,71 @@ function startJourney() {
     return;
   }
 
-  // ✅ Start tracking
-  watchId = navigator.geolocation.watchPosition(
+  navigator.geolocation.getCurrentPosition(
     (pos) => {
-
       const userLat = pos.coords.latitude;
       const userLng = pos.coords.longitude;
 
-      distance = getDistance(
-        userLat,
-        userLng,
-        selectedTask.lat,
-        selectedTask.lng
-      );
+      const url =
+        `https://www.google.com/maps/dir/?api=1` +
+        `&origin=${userLat},${userLng}` +
+        `&destination=${encodeURIComponent(selectedTask.location)}`;
 
-      console.log("USER:", userLat, userLng);
-      console.log("DEST:", selectedTask.lat, selectedTask.lng);
-      console.log("Distance:", distance);
+      window.open(url, "_blank");
 
-      saveTaskState();
-      renderWorkflow(workflowState);
-
-      // ✅ Auto arrive
-        if (distance <= 100) {
-          canReach = true;
-          renderWorkflow(workflowState); // 🔥 force UI update
-        }
+      updateState("ON_THE_WAY");
     },
     (err) => {
-      alert("Location error");
       console.error(err);
+      alert("Please allow location permission");
     },
     {
       enableHighAccuracy: true,
-      maximumAge: 0,
-      timeout: 10000
+      timeout: 10000,
+      maximumAge: 0
     }
   );
-
-  // ✅ Change state AFTER starting GPS
-  updateState(); // ASSIGNED → ON_THE_WAY
 }
+
+
+
+// locations 
+async function geocodeAddress(address) {
+
+  try {
+
+    console.log("SEARCH ADDRESS:", address);
+
+    const url =
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
+
+    const response = await fetch(url, {
+      headers: {
+        "Accept": "application/json"
+      }
+    });
+
+    const data = await response.json();
+
+    console.log("GEOCODE RESPONSE:", data);
+
+    if (!data || data.length === 0) {
+      return null;
+    }
+
+    return {
+      lat: parseFloat(data[0].lat),
+      lng: parseFloat(data[0].lon)
+    };
+
+  } catch (err) {
+
+    console.error("GEOCODE ERROR:", err);
+
+    return null;
+  }
+}
+
 
 function getDistance(lat1, lon1, lat2, lon2) {
   const R = 6371000;
@@ -603,19 +585,21 @@ function callCustomer() {
   window.open(`tel:${selectedTask.mobile}`);
 }
 
+
 function markReached() {
 
-  if (distance > 100) {
-    alert("You are too far from location");
+  const reason = prompt("Why are you marking as reached manually?");
+
+  if (!reason || reason.trim() === "") {
+    alert("Please enter reason");
     return;
   }
 
-  if (watchId) {
-    navigator.geolocation.clearWatch(watchId);
-  }
+  console.log("MANUAL REACHED REASON:", reason);
 
   updateState("ARRIVED");
 }
+
 
 function startTest() {
 
@@ -1021,88 +1005,67 @@ async function sendStatusToBackend(status) {
 
 function calculateEarnings() {
   let total = 0;
-  let tbody = document.getElementById("earningsTableBody");
-  let noDataMsg = document.getElementById("noEarningsMsg");
+  const tbody = document.getElementById("earningsTableBody");
+  const noDataMsg = document.getElementById("noEarningsMsg");
 
   tbody.innerHTML = "";
+
   let hasData = false;
 
-  console.log("LOCAL STORAGE:", localStorage);
-
-
   for (let i = 0; i < localStorage.length; i++) {
-    let key = localStorage.key(i);
+    const key = localStorage.key(i);
 
-    if (key.startsWith("task_")) {
-      let taskId = key.replace("task_", "");
-      let data = JSON.parse(localStorage.getItem(key));
+    if (!key.startsWith("task_")) continue;
 
-      if (data && data.state === "COMPLETED") {
+    const taskId = key.replace("task_", "");
+    const data = JSON.parse(localStorage.getItem(key));
 
-        // ✅ Get task details from backend-loaded tasks[]
-        const task = tasks.find(t => String(t.id) === String(taskId)) || {};
+    if (!data || data.state !== "COMPLETED") continue;
 
-        // ✅ Name
-        const name = task?.patient_name || "-";
+    const task = tasks.find(t => String(t.id) === String(taskId)) || {};
 
-        // ✅ Assigned Test (from backend)
-        const assignedTest = task?.test || "-";
+    const bookingId = getBookingId(taskId);
+    const name = data.patient_name || task.patient_name || "-";
+    const assignedTest = data.assigned_test || task.test || "-";
 
-        // ✅ All tests (assigned + add-on)
-        const allTests = data.testList || [];
+    const allTests = data.testList || [];
 
-        // ✅ Extract add-on tests (remove assigned ones)
-        let assignedArray = assignedTest
-          .split(",")
-          .map(t => t.trim().toLowerCase());
+    const assignedArray = assignedTest
+      .split(",")
+      .map(t => t.trim().toLowerCase());
 
-        const addOnTests = allTests.filter(t =>
-          !assignedArray.includes(t.toLowerCase())
-        );
+    const addonTests = allTests.filter(t =>
+      !assignedArray.includes(String(t).toLowerCase())
+    );
 
-        // ✅ Convert add-on tests to string
-        const addOnNames = addOnTests.length > 0
-          ? addOnTests.join(", ")
-          : "-";
+    const addonNames = data.addon_tests || (
+      addonTests.length > 0 ? addonTests.join(", ") : "-"
+    );
 
-        // ✅ Status
-        const status = data.state;
+    const status = data.status || data.state || "COMPLETED";
+    const incentive = Number(data.incentive || task.incentive || 0);
 
-        // ✅ Amount
-        let amount = data.incentive || 0;
-        total += Number(amount);
-        hasData = true;
+    total += incentive;
+    hasData = true;
 
-        // ✅ Row
-        let row = `
-          <tr>
-            <td style="padding:8px; border:1px solid #ddd;">${getBookingId(taskId)}</td>
-            <td style="padding:8px; border:1px solid #ddd;">${name}</td>
-            <td style="padding:8px; border:1px solid #ddd;">${assignedTest}</td>
-            <td style="padding:8px; border:1px solid #ddd;">${addOnNames}</td>
-            <td style="padding:8px; border:1px solid #ddd;">${status}</td>
-            <td style="padding:8px; border:1px solid #ddd;">₹${amount}</td>
-          </tr>
-        `;
-
-        tbody.innerHTML += row;
-      }
-    }
+    tbody.innerHTML += `
+      <tr>
+        <td>${bookingId}</td>
+        <td>${name}</td>
+        <td>${assignedTest}</td>
+        <td>${addonNames}</td>
+        <td>${status}</td>
+        <td>₹${incentive}</td>
+      </tr>
+    `;
   }
 
-  // ✅ Show / hide empty message
   if (noDataMsg) {
-    if (!hasData) {
-      noDataMsg.style.display = "block";
-    } else {
-      noDataMsg.style.display = "none";
-    }
+    noDataMsg.style.display = hasData ? "none" : "block";
   }
 
-  // ✅ Total earnings
   document.getElementById("totalEarnings").innerText = total;
 }
-
 
 
 
@@ -1221,13 +1184,17 @@ async function submitNow(){
   });
 
   // ✅ SAVE FINAL STATE WITH INCENTIVE
-  const data = {
-    state: "COMPLETED",
-    distance: distance,
-    testList: testList,
-    payable: finalPayable,
-    incentive: selectedTask.incentive ?? 0   // ✅ IMPORTANT
-  };
+const data = {
+  state: "COMPLETED",
+  taskId: selectedTask.id,
+  patient_name: selectedTask.patient_name,
+  assigned_test: selectedTask.test,
+  addon_tests: getAddonTests(),
+  status: "COMPLETED",
+  incentive: selectedTask.incentive ?? 0,
+  payable: finalPayable,
+  testList: testList
+};
 
   localStorage.setItem(getTaskKey(selectedTask.id), JSON.stringify(data));
 
@@ -1385,18 +1352,39 @@ async function loadProfile() {
 
   if (!collectorId) return;
 
-  const res = await fetch(`${BASE_URL}/api/collector/${collectorId}`);
-  const data = await res.json().catch(() => null);
+  try {
 
-  if (!data || data.error) {
-    console.error("Profile load failed");
-    return;
+    const res = await fetch(`${BASE_URL}/api/collector/${collectorId}`);
+    const data = await res.json();
+
+    if (!data || data.error) {
+      console.error("Profile load failed");
+      return;
+    }
+
+    // ✅ BASIC DETAILS
+    document.getElementById("profileId").innerText = "RPID" + data.id;
+
+    document.getElementById("profileName").innerText =
+      data.name || "-";
+
+    document.getElementById("profileMobile").innerText =
+      data.phone || "-";
+
+    document.getElementById("profileEmail").innerText =
+      data.email || "-";
+
+    // ✅ PROFILE IMAGE
+    const savedImage = localStorage.getItem("collectorProfileImage");
+
+    document.getElementById("profilePhoto").src =
+      savedImage || "logo.webp";
+
+  } catch (err) {
+
+    console.error("Profile load error:", err);
+
   }
-
-  document.getElementById("profileId").innerText = "RPID" + data.id;
-  document.getElementById("profileName").innerText = data.name;
-  document.getElementById("profileMobile").innerText = data.phone;
-  document.getElementById("profileEmail").innerText = data.email;
 }
 
 
@@ -1546,4 +1534,49 @@ function goNextFromPayment() {
 
   closePayment();
   updateState();
+}
+
+// profile
+
+function saveProfileImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    localStorage.setItem("collectorProfileImage", e.target.result);
+    document.getElementById("profilePhoto").src = e.target.result;
+  };
+
+  reader.readAsDataURL(file);
+}
+
+function removeProfileImage() {
+  localStorage.removeItem("collectorProfileImage");
+  document.getElementById("profilePhoto").src = "logo.webp";
+}
+
+
+
+if ("serviceWorker" in navigator) {
+
+  window.addEventListener("load", async () => {
+
+    try {
+
+      await navigator.serviceWorker.register("./service-worker.js");
+      console.log("PWA SW Registered");
+
+      await navigator.serviceWorker.register("./firebase-messaging-sw.js");
+      console.log("Firebase SW Registered");
+
+    } catch (err) {
+
+      console.log("SW ERROR:", err);
+
+    }
+
+  });
+
 }
